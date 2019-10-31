@@ -265,7 +265,7 @@ require([
 		var project_name = obj['Project_Name']
 		var project_type = obj['Project_Type']
 		var location = obj['Location']
-		var project_completion_date = obj['Forecast_Completion_Date]']
+		var project_completion_date = obj['Forecast_Completion_Date']
 		var project_phase = obj['Phase']
 		var project_phase_completion_date = obj['Project_Phase_Completion_Date']
 		var principal_officer = obj['Principal_Officer']
@@ -283,6 +283,11 @@ require([
 		var mark = document.createElement("mark")
 		var budget = document.createElement("p")
 		var phase = document.createElement("span")
+		var date = document.createElement("p")
+		
+		var DATE = new Date(project_completion_date)
+		var date_string = "Completion Date: " + String(DATE.getMonth()+1).padStart(2, '0') + "/" + DATE.getFullYear()
+		date.textContent = date_string
 		
 		if (project_type == 'CHES Maintenance Project'){
 			icon.className = "icon-ui-home"
@@ -320,13 +325,13 @@ require([
 		labels.appendChild(budget)
 		
 		var pm = document.createElement("p")
-		pm.textContent = "Principal Officer | " + principal_officer
+		pm.textContent = "Project Manager | " + project_manager
 		
 		var cpsm = document.createElement("p")
 		cpsm.textContent = "CPSM Planner | " + project_planner
 		
-		var principal_officer = document.createElement("p")
-		principal_officer.textContent = "Project Manager | " + project_manager
+		var po = document.createElement("p")
+		po.textContent = "Principal Officer | " + principal_officer
 		
 		var val = document.createElement("h5")
 		val.textContent = project_name
@@ -346,7 +351,8 @@ require([
 		d.append(val)
 		d.append(pm)
 		d.append(cpsm)
-		d.append(principal_officer)
+		d.append(po)
+		d.append(date)
 		d.className = "projects"
 		
 		return d
