@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+    
+<head>
+	
+	<link href='https://fonts.googleapis.com/css?family=Oswald|Roboto+Condensed|Roboto|Questrial|Raleway' rel='stylesheet'>
+	<link href="https://fonts.googleapis.com/css?family=Oswald:200,300&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="css/calcite-web.min.css">
+	
+	<link rel="stylesheet" href="https://js.arcgis.com/4.9/dijit/themes/claro/claro.css">
+	<link rel="stylesheet" href="https://js.arcgis.com/4.9/esri/css/main.css">
+	
+	<link rel="stylesheet" href="css/w3.css">
+	<link rel="stylesheet" href="css/layout.css">
+	
+	<script src="js/calcite-web.min.js"></script>
+	<script src="https://kit.fontawesome.com/f0e3873b42.js"></script>
+	<script src="https://js.arcgis.com/4.9/"></script>
+	<script src='js/main.js'></script>
+	
+	<!--style>
+		* {
+			box-sizing: border-box
+		}
+		
+		body {
+			height:100%;
+			width:100%;
+			margin:0;
+			padding:0;
+			display:grid;
+			grid-template-columns:66% auto;
+		}
+		
+		#viewDiv {
+			height:100%;
+			width:100%;
+		}
+		
+	</style-->
+	<style>	
+		#info {
+			padding:10px;
+			width:100%;
+			overflow-wrap: break-word;
+			overflow: auto;
+		}
+		
+		.projects {
+			display:flex;
+			flex-direction: column;
+			margin:15px;
+			padding:10px;
+			border:1px solid rgba(0,0,0,0.6);
+			border-radius: 12px;
+			background-color: #ededed;
+			box-shadow: 0 0 12px rgba(0,0,0,0.2)
+		}
+		
+		.full-width {
+			width:100%;
+		}
+		
+		#viewDiv {
+			min-width:1080px;
+		}
+	</style>
+</head>
+
+
+<body>
+	<div id="main-grid">
+		<div id="header">
+			<div id="nav" class="panel-dark-blue">
+				<img src="images/logos/UC Santa Cruz Logo - White.png" id="ucsc-logo">
+				<h1 class="trailer-half phone-hide">Active Capital Projects</h1>
+				<div id="map-options">
+					<div id="fieldsets" class="phone-hide">
+						<div>
+							<fieldset id="building-label-selector" class="radio-group">
+								<legend class="radio-group-title"><i class="icon-ui-labels"></i>Building Labels</legend>
+								<input class="radio-group-input" type="radio" id="On" value="on" name="building-label-toggle" />
+								<label class="radio-group-label" for="On">
+									<p>On</p>
+								</label>
+								<input class="radio-group-input" type="radio" id="Off" value="off" name="building-label-toggle" checked />
+								<label class="radio-group-label" for="Off">Off</label>
+							</fieldset>
+						</div>
+						<div>
+							<fieldset id="basemap-selector" class="radio-group">
+								<legend class="radio-group-title"><i class="icon-ui-basemap"></i>Choose your basemap</legend>
+								<input class="radio-group-input" type="radio" id="satellite" value="satellite" name="basemap-selector">
+								<label class="radio-group-label" for="satellite">Satellite</label>
+								<input class="radio-group-input" type="radio" id="carto" value="carto" name="basemap-selector" />
+								<label class="radio-group-label" for="carto">Carto</label>
+								<input class="radio-group-input" type="radio" id="hybrid" value="hybrid" name="basemap-selector" checked />
+								<label class="radio-group-label" for="hybrid">Hybrid</label>
+							</fieldset>
+						</div>
+					</div>
+					<div id="menu-icon-div">
+						<i id="menu-icon" class="icon-ui-layer-list phone-show"></i>
+						<i id="close-menu-icon" class="icon-ui-close phone-show"></i>
+					</div>
+				</div>
+			</div>
+		</div>
+		<header class="third-nav phone-hide">
+			<div class="third-nav-container">
+				<div class="grid-container">
+					<nav class="break" role="navigation" aria-labelledby="thirdnav">
+						<div id="break" style="margin-right:auto;">
+							<a class="third-nav-link hvr-underline-from-left" href="home/"><i class="far fa-building" style="margin-right:8px"></i>Maps Home</a>
+							<a class="third-nav-link hvr-underline-from-left" href="printable-maps/" target="_blank"><i class="far fa-file-pdf" style="margin-right:8px"></i>Printable Maps</a>
+							<a class="third-nav-link hvr-underline-from-left" href="detailed-directions/" target="_blank"><i class="icon-ui-documentation"></i>Detailed Directions</a>
+						</div>
+					</nav>
+				</div>
+			</div>
+		</header>
+		<header id="mobile-nav" class="third-nav phone-show">
+			<div class="third-nav-container">
+				<nav class="break" role="navigation" aria-labelledby="thirdnav">
+					<div id="mobile-nav-icon-div">
+						<a class="third-nav-link" title="PPDO Maps Team Homepage" href="home/"><i class="far fa-building" style="margin-right:8px"></i>HOME</a>
+						<a class="third-nav-link" title="PDF Maps for Printing" href="printable-maps/" target="_blank"><i class="far fa-file-pdf" style="margin-right:8px"></i>PDF</a>
+						<a class="third-nav-link" title="Driving and Parking Directions in your Web Browser" href="detailed-directions/" target="_blank"><i class="icon-ui-documentation"></i>HTML</a>
+					</div>
+				</nav>
+			</div>
+		</header>
+		<header id="mobile-search-bar" class="third-nav phone-show">
+			
+		</header>
+		<div id="main-content">
+			<div id="side-nav" class="tablet-hide">
+				<a href="mailto:maps@ucsc.edu" id="contact">
+					<i class="icon-ui-user"></i>
+					Contact the Maps Team
+				</a>
+				<a href="https://forms.gle/bGn4v1S8eoBJki7p9" id="survey">
+					<i class="icon-ui-authorize"></i>
+					Take A Survey
+				</a>
+				
+				<div id="info"></div>
+				
+				
+			</div>
+			<div id="main-wrapper">
+				<div id="mobile-menu">
+					<div id="admin-div">
+						<a href="mailto:maps@ucsc.edu" id="contact">
+							<i class="icon-ui-user"></i>
+							Contact Maps Team
+						</a>
+						<a href="https://forms.gle/bGn4v1S8eoBJki7p9" id="survey">
+							<i class="icon-ui-authorize"></i>
+							Take A Survey
+						</a>
+					</div>
+				</div>
+				<div id="viewDiv">
+					<div id="map-options-footer" class="phone-show">
+						<div id="basemaps-icon" class="phone-show map-options-icon">
+							<i class="icon-ui-basemap"></i>Cartographic
+						</div>
+						<div id="labels-icon" class="phone-show map-options-icon">
+							<i class="icon-ui-labels"></i>Building Labels
+						</div>
+					</div>
+					<div id="clear-all">
+						<span style="font-size: 20px">X</span>
+						<span>Clear Layers</span>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>

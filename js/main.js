@@ -1,0 +1,480 @@
+var view;
+var active_projects;
+var everyLayer;
+var query;
+var highlight;
+var identifyTask;
+var params;
+var ids;
+var infoDiv;
+var project_count;
+var zone_name;
+var side_nav_loader;
+
+require([
+    "esri/config",
+    "esri/Map",
+    "esri/views/MapView",
+    "esri/WebMap",
+    "esri/layers/FeatureLayer",
+	"esri/tasks/IdentifyTask",
+    "esri/tasks/support/IdentifyParameters",
+    "esri/widgets/Search",
+    "esri/widgets/Locate",
+    "esri/widgets/Home",
+    "esri/widgets/Popup",
+    "esri/layers/support/LabelClass",
+    "esri/core/promiseUtils",
+    "esri/core/watchUtils",
+	"esri/core/urlUtils",
+	"esri/tasks/support/Query",
+	"esri/core/Collection",
+    "dojo/domReady!"], function (
+	esriConfig,
+	Map,
+	MapView,
+	WebMap,
+	FeatureLayer,
+	IdentifyTask,
+	IdentifyParameters,
+	Search,
+	Locate,
+	Home,
+	Popup,
+	LabelClass,
+	promiseUtils,
+	watchUtils,
+	urlUtils,
+	Query,
+	Collection
+) {
+	
+	infoDiv = document.getElementById("info")
+	
+	//LABEL CLASSES
+	var active_projects_labels = {
+        symbol: {
+            type: "text",
+            color: "black",
+            haloColor: [255,255,255, 1.0],
+            haloSize: 1.5,
+            font: {
+                family: "Arial Unicode MS",
+                size: 10,
+                style:"normal",
+                weight: "bold"
+            }
+        },
+        labelPlacement: "always-horizontal",
+        labelExpressionInfo: {
+            expression: "upper($feature.NAME)"
+        }
+    };
+	
+	var buildingsLabelClass = {
+        symbol: {
+            type: "text",
+            color: "white",
+            haloColor: [0, 0, 0, 1.0],
+            haloSize: 0.75,
+            font: {
+                family: "Arial Unicode MS",
+                size: 9,
+                style:"normal",
+                weight: "bold"
+            }
+        },
+        labelPlacement: "always-horizontal",
+        labelExpressionInfo: {
+            expression: "$feature.LABELNAME"
+        }
+    };
+	
+	//LAYERS
+	active_projects = new FeatureLayer({
+		portalItem: {
+			id: "2ed5680d247043fc983f8197eb0b0893"
+		},
+		visible: true,
+		labelingInfo:[active_projects_labels],
+		popupEnabled:false
+	})
+	
+	buildings_lyr = new FeatureLayer({
+        portalItem:{
+            id:"9f17f4aed3554b15a189f89b13f36b58"
+        },
+        definitionExpression: "OBJECTID not in (703)",
+        visible: true,
+	  	renderer: {
+			type: "simple",  // autocasts as new SimpleRenderer()
+			symbol: {
+			  type: "simple-fill",  // autocasts as new SimpleMarkerSymbol()
+			  color: [255,255,255,0.1],
+			  outline: {  // autocasts as new SimpleLineSymbol()
+				width: 0.5,
+				color: null
+			  }
+			}
+		  },
+        labelingInfo: [buildingsLabelClass]
+    })
+	buildings_lyr.labelsVisible = false;
+
+	everyLayer = [active_projects]
+
+	//BASEMAPS
+	carto = new WebMap({
+        portalItem: {
+		  	id:"09112c9e929a4f4588007f3791aac99e"
+        }
+    });
+	carto.when(function(carto) {
+        carto.addMany(everyLayer)
+    })
+	//795020303530467f8d096fca5f4d022c
+	
+  	satellite = new WebMap({
+        portalItem: {
+            id:"515d7e26cfb64c42824a97a46ce439ca"
+        }
+    });
+	satellite.when(function(satellite) {
+        satellite.addMany(everyLayer)
+    })
+	
+	hybrid = new WebMap({
+        portalItem: {
+			id:"62c4794e40e14c94a4bf3a7258f40878"
+        }
+    });
+	hybrid.when(function(hybrid) {
+        hybrid.addMany(everyLayer)
+    })
+
+	//MAP VIEW
+	view = new MapView({
+		container: "viewDiv",
+		map: hybrid,
+		zoom: 14,
+		center: [-122.068564, 36.999662],
+		layerViews: everyLayer,
+		highlightOptions:{
+			color:"orange",
+			haloOpacity:0,
+			fillOpacity:0.25,
+			
+		},
+		popup: {
+			highlightEnabled: true,
+			dockEnabled: true,
+			dockOptions: {
+				buttonEnabled: false,
+				position: "bottom-center"
+			}
+		}
+	})
+	
+	//WIDGETS	
+	view.ui.remove("attribution");
+	
+	homeBtn = new Home({
+        view: view
+    })
+    view.ui.add(homeBtn, "top-left")
+    
+    var locateBtn = new Locate({
+        view: view
+      });
+    view.ui.add(locateBtn, {position: "top-left"});
+    
+	view.ui.add("map-options-footer", "top-right")
+	
+	searchWidget = new Search({
+        view: view,
+        maxSuggestions: 35,
+		allPlaceholder: "Begin typing and select an option from the suggestions...",
+        sources: [
+            {featureLayer: {
+                url: "https://services3.arcgis.com/21H3muniXm83m5hZ/arcgis/rest/services/buildings_app/FeatureServer/0"},
+            searchFields: ["BUILDINGNAME", "ABBREVSHORT", "ALIAS", "LABELNAME", "DEPARTMENTS"],
+            displayField: "BUILDINGNAME",
+            exactMatch: false,
+            outFields: ["BUILDINGNAME"],
+            name: "Buildings",
+            placeholder: "enter a building name or departments",
+            }        
+        ]
+    });
+    searchWidget.includeDefaultSources = false //remove ArcGIS World Geocoding Service
+	searchWidget.on("select-result", function(event){
+	  searchWidget.clear();
+	  buildings_lyr.labelsVisible = true
+	  view.zoom = 19
+	  var viewD = document.getElementById('viewDiv');
+	  var mobile_menu = document.getElementById('mobile-menu');
+	  var menu_icon = document.getElementById('menu-icon');
+	  var close_menu_icon = document.getElementById('close-menu-icon');
+	  if (viewD.style.display == 'none'){
+		viewD.style.display = 'flex'
+		mobile_menu.style.display = 'none'
+		menu_icon.style.display = 'flex'
+		close_menu_icon.style.display = 'none'
+	  }
+	});
+    view.ui.add(searchWidget, {position: "top-right"});
+	
+	
+	function makeDiv(obj) {
+		d = document.createElement("div")
+		var br = document.createElement("br")
+		for (var prop in obj) {
+			// skip loop if the property is from prototype
+			if (!obj.hasOwnProperty(prop)) continue;
+
+			// your code
+			row = document.createElement("span")
+			row.className = "full-width"
+			row.textContent = prop + " : " + obj[prop]
+			d.appendChild(row)
+			d.appendChild(br)
+			//console.log(prop + " = " + obj[prop]);
+		}
+	
+		d.className = "projects"
+		//d.textContent = JSON.stringify(obj)
+		return d
+	}
+	
+	function buildInfoDiv(item) {
+		var side_nav_loader = document.getElementById("loading")
+		side_nav_loader.classList.remove("is-active")
+		infoDiv = document.getElementById("info")
+		infoDiv.append(item)
+	}
+	
+	function makeCard(obj) {
+		var zone_header = document.getElementById("zone")
+		
+		function formatMoney(n, currency) {
+		  return currency + n.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,');
+		}
+		
+		d = document.createElement("div")
+		
+		var project_name = obj['Project_Name']
+		var project_type = obj['Project_Type']
+		var location = obj['Location']
+		var project_completion_date = obj['Forecast_Completion_Date]']
+		var project_phase = obj['Phase']
+		var project_phase_completion_date = obj['Project_Phase_Completion_Date']
+		var principal_officer = obj['Principal_Officer']
+		var project_manager = obj['PPDO_Manager']
+		var project_planner = obj['CPSM_Planner']		
+		var target_budget = obj['Target_Budget']
+		if (target_budget){	
+			var tar_budget = formatMoney(target_budget, '$').slice(0,-3)
+		} else {
+			var tar_budget = "No Budget Information"
+		}
+		zone_header.textContent = location
+		
+		var icon = document.createElement("i")
+		var mark = document.createElement("mark")
+		var budget = document.createElement("p")
+		var phase = document.createElement("span")
+		
+		if (project_type == 'CHES Maintenance Project'){
+			icon.className = "icon-ui-home"
+			mark.className = "label label-green"
+			mark.style.maxWidth = "150px"
+		} else if (project_type == 'Major Capital Project') {
+			icon.className = "icon-ui-organization"
+			mark.className = "label label-blue"
+			mark.style.maxWidth = "125px"
+		} else if (project_type == 'Minor Capital Project') {
+			icon.className = "icon-ui-settings"
+			mark.className = "label label-blue"
+			mark.style.maxWidth = "125px"
+		} else if (project_type == 'Small Project') {
+			icon.className = "icon-ui-settings2"
+			mark.className = "label label-yellow"
+			mark.style.maxWidth = "100px"
+		} else if (project_type == 'Capital Planning Study') {
+			icon.className = "icon-ui-experimental"
+			mark.className = "label label-red"
+			mark.style.maxWidth = "150px"
+		}
+				
+		mark.textContent = project_type
+		
+		budget.style.margin = "0"
+		budget.style.marginLeft = "auto"
+		budget.textContent = tar_budget
+		
+		var labels = document.createElement("div")
+		labels.className = "labels"
+		labels.appendChild(icon)
+		labels.appendChild(mark)
+		labels.appendChild(phase)
+		labels.appendChild(budget)
+		
+		var pm = document.createElement("p")
+		pm.textContent = "Principal Officer | " + principal_officer
+		
+		var cpsm = document.createElement("p")
+		cpsm.textContent = "CPSM Planner | " + project_planner
+		
+		var principal_officer = document.createElement("p")
+		principal_officer.textContent = "Project Manager | " + project_manager
+		
+		var val = document.createElement("h5")
+		val.textContent = project_name
+		
+		phase.className = "circ"
+		if (project_phase.length > 1){
+			phase.style.fontSize = "0.7em"
+			phase.style.width = "2.4em"
+			phase.style.lineHeight = "2.4em"
+			phase.style.borderRadius = "1.6em"
+			phase.style["-moz-border-radius"] = "1.6em"
+			phase.style["-webkit-border-radius"] = "1.6em"
+		}
+		phase.textContent = project_phase
+		
+		d.append(labels)
+		d.append(val)
+		d.append(pm)
+		d.append(cpsm)
+		d.append(principal_officer)
+		d.className = "projects"
+		
+		return d
+		
+	}
+
+	function changeCursor(response) {
+		if (response.results.length > 0) {
+			document.getElementById("viewDiv").style.cursor = "pointer";
+		} else {
+			document.getElementById("viewDiv").style.cursor = "default";
+		}
+	}
+
+	function addHighlight(response) {
+		if (highlight){
+			highlight.remove()
+		}
+		var graphic = response.results.filter(function (result) {
+			return result.graphic.layer === active_projects;
+		})[0].graphic;
+		
+		
+		view.whenLayerView(graphic.layer).then(function (layerView) {
+			highlight = layerView.highlight(graphic);
+		});
+	}
+		
+	view.on("click", function(event){
+	  
+	  var side_nav_loader = document.getElementById("loading")
+	  side_nav_loader.classList.add("is-active")
+		
+	  var query = new Query();
+	  query.geometry = event.mapPoint;  // obtained from a view click event
+	  query.spatialRelationship = "intersects";
+
+	  view.whenLayerView(active_projects).then(function(layerView){
+		  watchUtils.whenNotOnce(layerView, "updating").then(function(){
+			return layerView.queryObjectIds(query);
+		  }).then(function(ids){
+			  const relatedQuery = {
+				  outFields: ["*"],
+				  objectIds: ids,
+				  relationshipId:0
+			  }
+			  const zoneQuery = {
+				  outFields: ["*"],
+				  objectIds: ids,
+			  }
+			  
+			  active_projects.queryFeatures(zoneQuery).then(function(result){
+			  	  zone_name = result.features[0].attributes["NAME"]
+			  })
+			  
+			  active_projects.queryRelatedFeatures(relatedQuery).then(function (result) {
+			  	  ids.forEach(function (objectId) {
+				  console.log(objectId)
+				  if (result[objectId]) {
+					  
+					  project_count = result[objectId].features.length
+					 
+					  var message = document.getElementById("message")
+					  if(project_count == 1){
+						  message.textContent = "There is " + project_count +" active project here"
+					  } else {
+						  message.textContent = "There are " + project_count +" active projects here"
+					  }
+					  var zone = document.getElementById("zone")
+					  zone.style.display = ""
+					  
+					  infoDiv = document.getElementById("info")
+					  var project_cards = document.getElementsByClassName("projects")
+					  console.log(project_cards)
+					  
+					  if (project_cards.length > 0){
+						  for (let i = project_cards.length-1; i>=0; i--){
+					  		project_cards[i].remove()
+						  }
+					  }
+				      
+					  console.group("relationship for feature:", objectId)
+					  result[objectId].features.forEach(function (feature) {
+					    console.log("attributes", feature.attributes);
+						makeDiv(feature.attributes)
+						var div = makeCard(feature.attributes)
+						buildInfoDiv(div)
+					  });
+					  console.groupEnd();
+				  } else {
+					  var side_nav_loader = document.getElementById("loading")
+					  side_nav_loader.classList.remove("is-active")
+					  infoDiv.style.alignItems = "center"
+					  var project_cards = document.getElementsByClassName("projects")
+					  console.log(project_cards)
+					  
+					  if (project_cards.length > 0){
+						  for (let i = project_cards.length-1; i>=0; i--){
+					  		project_cards[i].remove()
+						  }
+					  }
+					  var message = document.getElementById("message")
+					  message.textContent = "There are no active projects here"
+					  var zone_header = document.getElementById("zone")
+					  zone_header.textContent = zone_name
+					  zone_header.style.display = ""
+				  }});
+			  }).catch(function (error) {
+			  	  console.log("error from queryRelatedFeatures:", error);
+			  });
+			  //console.log("after")
+		  });
+	  });
+	});
+
+
+	var highlight;
+	view.on("pointer-move", function (event) {
+		view.hitTest(event).then(function (response) {
+			if (response.results.length) {
+				changeCursor(response)
+				addHighlight(response)
+			} else {
+				changeCursor(response)
+				highlight.remove()
+				
+			}
+		});
+	});	
+	
+});
